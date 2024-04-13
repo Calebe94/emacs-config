@@ -120,3 +120,4 @@
 (package! ivy-emoji)
 (package! chatgpt-shell)
 (package! dall-e-shell)
+(package! org-ai)

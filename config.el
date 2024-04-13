@@ -382,3 +382,131 @@
   "Rename eww browser's buffer so sites open in new page."
   (rename-buffer "eww" t))
 (add-hook 'eww-mode-hook #'xah-rename-eww-hook)
+
+;; Enable emojify on startup
+(use-package! emojify
+  :hook (after-init . global-emojify-mode))
+
+(use-package org-ai
+  :ensure t
+  :commands (org-ai-mode
+             org-ai-global-mode)
+  :init
+  (add-hook 'org-mode-hook #'org-ai-mode) ; enable org-ai in org-mode
+  (org-ai-global-mode) ; installs global keybindings on C-c M-a
+  :config
+  (setq org-ai-default-chat-model "gpt-3.5-turbo") ; if you are on the gpt-4 beta:
+  (setq org-ai-openai-api-token "ORG_AI_TOKEN")
+  (org-ai-install-yasnippets)) ; if you are using yasnippet and want `ai` snippets
+
+(setq warning-suppress-types '((org-element-cache)))
+
+;; Definir função para exportar o prompt selecionado
+;; (defun export-selected-prompt ()
+;;   (interactive)
+;;   (let* ((prompts-list-path "/home/calebe94/Projects/scripts/prompts.yaml")
+;;          (prompts (yaml-find-all-prompts prompts-list-path))
+;;          (selected-prompt (completing-read "Select a prompt: " prompts nil t))
+;;          (instructions (yaml-get-instructions selected-prompt prompts-list-path)))
+;;     (insert "#+begin_ai :noweb yes\n")
+;;     (insert "[SYS]: " instructions "\n")
+;;     (insert " [ME]: \n")
+;;     (insert "#+end_ai\n")))
+
+;; ;; Definir função para carregar prompts do arquivo YAML
+;; (defun yaml-find-all-prompts (yaml-file)
+;;   (with-temp-buffer
+;;     (insert-file-contents yaml-file)
+;;     (goto-char (point-min))
+;;     (let ((prompts '()))
+;;       (while (re-search-forward "^- Prompt: \\(.*\\)" nil t)
+;;         (push (match-string 1) prompts))
+;;       prompts)))
+
+;; ;; Definir função para obter instruções do prompt selecionado
+;; (defun yaml-get-instructions (selected-prompt yaml-file)
+;;   (with-temp-buffer
+;;     (insert-file-contents yaml-file)
+;;     (goto-char (point-min))
+;;     (if (re-search-forward (concat "^- Prompt: " (regexp-quote selected-prompt) "$") nil t)
+;;         (progn
+;;           (forward-line)
+;;           (let ((instructions ""))
+;;             (while (not (or (looking-at "^- Prompt:") (eobp)))
+;;               (when (looking-at "  Instructions:")
+;;                 (forward-line)
+;;                 (setq instructions (concat instructions (replace-regexp-in-string "^    - " "" (thing-at-point 'line t)) "\n")))
+;;               (forward-line))
+;;             instructions))
+;;       "Instructions not found")))
+
+;; ;; Definir mapeamento de teclas para disparar a lista de prompts
+;; (map! :leader
+;;       :desc "Choose and export prompt"
+;;       "i a" #'export-selected-prompt)
+(defun check-update (file)
+  "Check if the file needs to be updated."
+  (let* ((threshold (- (float-time) 86400))  ; 86400 seconds = 1 day
+         (file-mtime (float-time (nth 5 (file-attributes file))))
+         (update (if (not (file-exists-p file))
+                     t
+                   (< file-mtime threshold))))
+    (if update
+        (cache-prompts))))
+
+(defun cache-prompts ()
+  "Cache prompts by downloading from the given URL."
+  (url-copy-file "https://raw.githubusercontent.com/f/awesome-chatgpt-prompts/main/prompts.csv" "/tmp/prompts.csv"))
+
+(defun remove-quotes (str)
+  "Remove quotes from the given string."
+  (replace-regexp-in-string "\"" "" str))
+
+(defun list-prompts-acts ()
+  "List prompts acts."
+  (check-update "/tmp/prompts.csv")
+  (with-temp-buffer
+    (insert-file-contents "/tmp/prompts.csv")
+    (goto-char (point-min))
+    (forward-line)
+    (while (not (eobp))
+      (let ((line (split-string (buffer-substring (line-beginning-position) (line-end-position)) ",")))
+        (message (remove-quotes (car line)))
+        (forward-line)))))
+
+(defun find-prompt-by-act (selected-prompt)
+  "Find prompt by act."
+  (with-temp-buffer
+    (insert-file-contents "/tmp/prompts.csv")
+    (goto-char (point-min))
+    (forward-line)
+    (while (not (eobp))
+      (let ((line (split-string (buffer-substring (line-beginning-position) (line-end-position)) ",")))
+        (when (string= (remove-quotes (car line)) selected-prompt)
+          (let ((prompt ""))
+            (dolist (elem (cdr line))
+              (setq prompt (concat prompt elem)))
+            (message prompt)))
+        (forward-line)))))
+
+;; Função para abrir uma conexão SSH para um host específico
+(defun ssh-to-host (username host)
+  (interactive)
+  (require 'em-tramp) ;; Certifique-se de que o pacote em-tramp seja carregado antes de usar tramp
+  (let ((default-directory (format "/sshx:%s@%s:/home/%s/" username host username)))
+    (eshell)))
+
+;; Função para selecionar e abrir uma conexão SSH para um host
+(defun ssh-to-selected-host ()
+  (interactive)
+  (let ((chosen-host (completing-read "Choose host: " '("magalu" "magalu-pc"))))
+    (cond ((string-equal chosen-host "magalu")
+           (ssh-to-host "calebe" "magalu"))
+          ((string-equal chosen-host "magalu-pc")
+           (ssh-to-host "calebe94" "magalu-pc")))))
+
+;; Mapeie a função ssh-to-selected-host para a combinação de teclas SPC o s
+(map! :leader
+      :desc "SSH to host"
+      "o s" #'ssh-to-selected-host)
+;; (company-mode -1)
