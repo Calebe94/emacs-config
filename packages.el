@@ -121,3 +121,4 @@
 (package! chatgpt-shell)
 (package! dall-e-shell)
 (package! org-ai)
+(package! py-autopep8)

@@ -401,49 +401,6 @@
 
 (setq warning-suppress-types '((org-element-cache)))
 
-;; Definir função para exportar o prompt selecionado
-;; (defun export-selected-prompt ()
-;;   (interactive)
-;;   (let* ((prompts-list-path "/home/calebe94/Projects/scripts/prompts.yaml")
-;;          (prompts (yaml-find-all-prompts prompts-list-path))
-;;          (selected-prompt (completing-read "Select a prompt: " prompts nil t))
-;;          (instructions (yaml-get-instructions selected-prompt prompts-list-path)))
-;;     (insert "#+begin_ai :noweb yes\n")
-;;     (insert "[SYS]: " instructions "\n")
-;;     (insert " [ME]: \n")
-;;     (insert "#+end_ai\n")))
-
-;; ;; Definir função para carregar prompts do arquivo YAML
-;; (defun yaml-find-all-prompts (yaml-file)
-;;   (with-temp-buffer
-;;     (insert-file-contents yaml-file)
-;;     (goto-char (point-min))
-;;     (let ((prompts '()))
-;;       (while (re-search-forward "^- Prompt: \\(.*\\)" nil t)
-;;         (push (match-string 1) prompts))
-;;       prompts)))
-
-;; ;; Definir função para obter instruções do prompt selecionado
-;; (defun yaml-get-instructions (selected-prompt yaml-file)
-;;   (with-temp-buffer
-;;     (insert-file-contents yaml-file)
-;;     (goto-char (point-min))
-;;     (if (re-search-forward (concat "^- Prompt: " (regexp-quote selected-prompt) "$") nil t)
-;;         (progn
-;;           (forward-line)
-;;           (let ((instructions ""))
-;;             (while (not (or (looking-at "^- Prompt:") (eobp)))
-;;               (when (looking-at "  Instructions:")
-;;                 (forward-line)
-;;                 (setq instructions (concat instructions (replace-regexp-in-string "^    - " "" (thing-at-point 'line t)) "\n")))
-;;               (forward-line))
-;;             instructions))
-;;       "Instructions not found")))
-
-;; ;; Definir mapeamento de teclas para disparar a lista de prompts
-;; (map! :leader
-;;       :desc "Choose and export prompt"
-;;       "i a" #'export-selected-prompt)
 (defun check-update (file)
   "Check if the file needs to be updated."
   (let* ((threshold (- (float-time) 86400))  ; 86400 seconds = 1 day
@@ -510,3 +467,82 @@
       :desc "SSH to host"
       "o s" #'ssh-to-selected-host)
 ;; (company-mode -1)
+
+(use-package lsp-mode
+  :commands lsp
+  :config
+  (setq lsp-idle-delay 0.5
+        lsp-enable-symbol-highlighting t
+        lsp-enable-snippet nil  ;; Not supported by company capf
+        lsp-pyls-plugins-flake8-enabled t
+        lsp-pyls-plugins-pycodestyle-enabled nil
+        lsp-pyls-plugins-mccabe-enabled nil
+        lsp-pyls-plugins-pyflakes-enabled nil)
+  (lsp-register-custom-settings
+   '(("pyls.plugins.pyls_mypy.enabled" t t)
+     ("pyls.plugins.pyls_mypy.live_mode" nil t)
+     ("pyls.plugins.pyls_black.enabled" t t)
+     ("pyls.plugins.pyls_isort.enabled" t t)))
+  :hook
+  ((sh-mode . lsp)
+   (python-mode . lsp)
+   (c-mode . lsp)
+   (c++-mode . lsp)
+   (lsp-mode . lsp-enable-which-key-integration)))
+
+(use-package lsp-ui
+  :config
+  (setq lsp-ui-sideline-show-hover t
+        lsp-ui-sideline-delay 0.5
+        lsp-ui-doc-delay 5
+        lsp-ui-sideline-ignore-duplicates t
+        lsp-ui-doc-position 'bottom
+        lsp-ui-doc-alignment 'frame
+        lsp-ui-doc-header nil
+        lsp-ui-doc-include-signature t
+        lsp-ui-doc-use-childframe t)
+  :commands lsp-ui-mode
+  :bind (:map evil-normal-state-map
+              ("gd" . lsp-ui-peek-find-definitions)
+              ("gr" . lsp-ui-peek-find-references)))
+
+(use-package pyvenv
+  :demand t
+  :config
+  (setq pyvenv-workon "emacs")  ; Default venv
+  (pyvenv-tracking-mode 1))  ; Automatically use pyvenv-workon via dir-locals
+
+;;; C Language Configuration
+;; Prevent namespace indentation in C/C++
+(c-set-offset 'innamespace 0)
+;; Disable formatting with LSP, use clang-format instead
+(setq +format-with-lsp nil)
+
+(after! eglot
+  :config
+  (add-hook 'python-mode-hook (lambda ()
+                                (add-hook 'before-save-hook 'py-autopep8-buffer nil 'local)))
+  (add-hook 'f90-mode-hook 'eglot-ensure)
+  (set-eglot-client! 'cc-mode '("clangd" "-j=3" "--clang-tidy"))
+  (set-eglot-client! 'python-mode '("pylsp"))
+  ;; (when (string= (system-name) "blah"))
+)
+
+;;; Company and which-key Integration
+(global-set-key "\t" 'company-complete-common)
+(setq company-idle-delay 0)
+(add-hook 'after-init-hook 'global-company-mode)
+(which-key-mode)
+
+;;; Hooks to inhibit LSP features during company completion
+(add-hook 'company-completion-started-hook
+          (lambda (&rest _)
+            (setq-local lsp-inhibit-lsp-hooks t)
+            (lsp--capf-clear-cache))
+          nil
+          t)
+
+;;; Disable on-type formatting globally for LSP
+(use-package-hook! lsp-mode
+  :post-config
+  (setq lsp-enable-on-type-formatting nil))
