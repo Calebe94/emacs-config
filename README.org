@@ -1,6 +1,46 @@
+#+TITLE: Calebe94’s Doom Emacs Config
+#+AUTHOR: Edimar Calebe Castanho
+#+DESCRIPTION: Calebe94’s personal Doom Emacs config.
+#+STARTUP: showeverything
+#+PROPERTY: header-args :tangle config.el
+
+This is my personal Doom Emacs config.
+Doom Emacs is a distribution of Emacs that uses the "evil" keybindings (Vim keybindings) and includes a number of nice extensions and a bit of configuration out of the box.
+
+* Table of Contents :TOC:
+- [[#config][Config]]
+  - [[#personal-information][Personal Information]]
+  - [[#theme-and-fonts][Theme and fonts]]
+  - [[#beacon][Beacon]]
+  - [[#misc][Misc]]
+  - [[#melpa][Melpa]]
+  - [[#org-mode][ORG-MODE]]
+  - [[#eww][EWW]]
+
+* Config
+
+** Personal Information
+
+Some functionality uses this to identify you, e.g. GPG configuration, email clients, file templates and snippets.
+
+#+begin_src emacs-lisp
 (setq user-full-name "Edimar Calebe Castanho"
       user-mail-address "calebe94@disroot.org")
+#+end_src
 
+** Theme and fonts
+Doom exposes five (optional) variables for controlling fonts in Doom. Here
+are the three important ones:
+
++ `doom-font'
++ `doom-variable-pitch-font'
++ `doom-big-font' -- used for `doom-big-font-mode'; use this for
+  presentations or streaming.
+
+They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
+font string. You generally only need these two:
+
+#+begin_src emacs-lisp
 ;; (setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 32 :weight 'normal :style 'medium)
 ;;     doom-variable-pitch-font (font-spec :family "sans" :size 32))
 
@@ -12,7 +52,14 @@
 )
 (custom-set-faces
  '(variable-pitch ((t (:family "JetBrains Mono")))))
+#+end_src
 
+There are two ways to load a theme. Both assume the theme is installed and
+available. You can either set `doom-theme' or manually load a theme with the
+`load-theme' function. This is the default:
+(setq doom-theme 'doom-one)
+
+#+begin_src emacs-lisp
 ;(custom-set-faces!
 ;  '(vertical-border :foreground "#666666")
 ;  '(mode-line :box "1px solid #666666"))
@@ -33,9 +80,17 @@
          (let ((project-name (projectile-project-name)))
            (unless (string= "-" project-name)
              (format (if (buffer-modified-p)  " ◉ %s" "  ●  %s") project-name))))))
+#+end_src
 
+** Beacon
+Never lose your cursor.  When you scroll, your cursor will shine!  This is a global minor-mode. Turn it on everywhere with:
+
+#+begin_src emacs-lisp
 ;; (beacon-mode 1)
+#+end_src
 
+** Misc
+#+begin_src emacs-lisp
 (setq display-line-numbers-type t)
 
 (setq org-re-reveal-klipsify-src t)
@@ -104,11 +159,20 @@
     (current-buffer)))
 (setq browse-url-browser-function 'browse-url-generic
       browse-url-generic-program "chromium")
+#+end_src
 
+** Melpa
+
+#+begin_src emacs-lisp
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (package-initialize)
+#+end_src
 
+** ORG-MODE
+ A GNU Emacs major mode for keeping notes, authoring documents, computational notebooks, literate programming, maintaining to-do lists, planning projects, and more — in a fast and effective plain text system.
+
+#+begin_src emacs-lisp
 (after! org
   (setq org-directory "~/org/"
         org-default-notes-file (expand-file-name "notes.org" org-directory)
@@ -170,7 +234,15 @@
     (message (concat "Copied URL: " url))))
 
 ;; (define-key org-mode-map (kbd "C-x C-l") 'org-link-copy)
+#+end_src
 
+*** Babel
+[[https://orgmode.org/worg/org-contrib/babel/][Babel]] is Org's ability to execute source code within Org documents.
+If you are not familiar with Org please take a moment to read the Org homepage before continuing.
+Babel started life as Org-babel, an extension to Org. It was integrated into the Org core at version 7.0.
+The author of Babel is Eric Schulte. The secondary author is Dan Davison.
+
+#+begin_src emacs-lisp
 (map! :leader
       :desc "Org babel tangle" "m B" #'org-babel-tangle)
 
@@ -210,7 +282,13 @@
    (plantuml . t)
    )
  )
+#+end_src
 
+*** Kanban
+Kanban table for org-mode.
+Link: [[https://github.com/gizmomogwai/org-kanban][org-kanban]]
+
+#+begin_src emacs-lisp
 (after! org-kanban
   :config
 (defun org-kanban//link-for-heading (heading file description)
@@ -219,7 +297,12 @@
       (format "[[*%s][%s]]" heading description)
     (error "Illegal state")))
   )
+#+end_src
 
+*** Noter
+Org-noter’s purpose is to let you create notes that are kept in sync when you scroll through the document, but that are external to it - the notes themselves live in an Org-mode file. As such, this leverages the power of Org-mode (the notes may have outlines, latex fragments, babel, etc…) while acting like notes that are made inside the document. Also, taking notes is very simple: just press i and annotate away!
+
+#+begin_src emacs-lisp
 (use-package! org-noter
   :config
   (setq
@@ -239,9 +322,16 @@
           :desc "Write notes"                    "w" #'org-noter)
         )
   )
+#+end_src
 
+*** bullets
+
+#+begin_src emacs-lisp
 (require 'org-bullets)(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+#+end_src
 
+*** agenda
+#+begin_src emacs-lisp
 (after! org
         (setq
                 ;; org-agenda-files '("~/org/agenda.org")
@@ -254,10 +344,18 @@
                 ;;                                 ":")
         )
 )
+#+end_src
 
+*** superstar
+
+#+begin_src emacs-lisp
 (require 'org-superstar)
 (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1)))
+#+end_src
 
+*** fancy priorities
+
+#+begin_src emacs-lisp
 (use-package org-fancy-priorities
   :ensure t
   :hook
@@ -271,7 +369,10 @@
                                 (?C :foreground "#c678dd" :weight bold))
                                 )
 )
+#+end_src
 
+*** agenda
+#+begin_src emacs-lisp
 (setq org-agenda-custom-commands
       '(("v" "A better agenda view"
          ((tags "PRIORITY=\"A\""
@@ -294,7 +395,10 @@
       org-journal-time-prefix "* "
       org-journal-file-format "%d-%m-%Y.org"
       )
+#+end_src
 
+*** Macros
+#+begin_src emacs-lisp
 (defun insert-emacs-lisp-block ()
   "Insere um bloco de código Emacs Lisp no formato org-mode."
   (interactive)
@@ -304,7 +408,13 @@
 (map! :leader
       (:prefix "i"
         :desc "Insert Emacs Lisp block" "b" #'insert-emacs-lisp-block))
+#+end_src
 
+*** org-present
++ [[https://www.youtube.com/watch?v=SCPoF1PTZpI][The Secrets of My Emacs Presentation Style - YouTube]]
++ [[https://systemcrafters.net/emacs-tips/presentations-with-org-present/][The Secrets of My Emacs Presentation Style - System Crafters]]
+
+#+begin_src emacs-lisp
 ;; Install org-present if needed
 ;; (unless (package-installed-p 'org-present)
 ;;   (package-install 'org-present))
@@ -377,8 +487,14 @@
 (add-hook 'org-present-mode-quit-hook 'my/org-present-end)
 (add-hook 'org-present-after-navigate-functions 'my/org-present-prepare-slide)
 
+#+end_src
+
+** EWW
+
+#+begin_src emacs-lisp
 ;; Auto-rename new eww buffers
 (defun xah-rename-eww-hook ()
   "Rename eww browser's buffer so sites open in new page."
   (rename-buffer "eww" t))
 (add-hook 'eww-mode-hook #'xah-rename-eww-hook)
+#+end_src
