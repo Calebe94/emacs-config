@@ -528,12 +528,6 @@
   ;; (when (string= (system-name) "blah"))
 )
 
-;;; Company and which-key Integration
-(global-set-key "\t" 'company-complete-common)
-(setq company-idle-delay 0)
-(add-hook 'after-init-hook 'global-company-mode)
-(which-key-mode)
-
 ;;; Hooks to inhibit LSP features during company completion
 (add-hook 'company-completion-started-hook
           (lambda (&rest _)
