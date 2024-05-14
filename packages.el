@@ -49,3 +49,5 @@
 (package! dall-e-shell)
 (package! org-ai)
 (package! py-autopep8)
+(package! lsp-mode)
+(package! lsp-ui)

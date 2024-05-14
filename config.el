@@ -456,11 +456,14 @@
 ;; Função para selecionar e abrir uma conexão SSH para um host
 (defun ssh-to-selected-host ()
   (interactive)
-  (let ((chosen-host (completing-read "Choose host: " '("magalu" "magalu-pc"))))
+  (let ((chosen-host (completing-read "Choose host: " '("magalu" "magalu-pc" "calebe.dev.br"))))
     (cond ((string-equal chosen-host "magalu")
            (ssh-to-host "calebe" "magalu"))
           ((string-equal chosen-host "magalu-pc")
-           (ssh-to-host "calebe94" "magalu-pc")))))
+           (ssh-to-host "calebe94" "magalu-pc"))
+          ((string-equal chosen-host "calebe.dev.br")
+           (ssh-to-host "calebe94" "calebe.dev.br"))
+        )))
 
 ;; Mapeie a função ssh-to-selected-host para a combinação de teclas SPC o s
 (map! :leader
