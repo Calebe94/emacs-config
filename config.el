@@ -543,3 +543,150 @@
 (use-package-hook! lsp-mode
   :post-config
   (setq lsp-enable-on-type-formatting nil))
+
+;; Configuração do fzf
+(use-package fzf
+  :ensure t  ;; Assegura que o pacote será instalado se ainda não estiver
+  :config
+  (setq fzf/args "-x --color bw --print-query --margin=1,0 --no-hscroll"
+        fzf/executable "fzf"
+        fzf/git-grep-args "-i --line-number %s"
+        fzf/grep-command "grep -nrH"
+        fzf/position-bottom t
+        fzf/window-height 15))
+
+;; Função para obter o diretório atual do buffer dired
+(defun my-dired-fzf ()
+  "Open fzf with current dired directory as default path."
+  (interactive)
+  (require 'fzf)
+  (let ((default-directory (dired-current-directory)))
+    (fzf/start)))
+
+;; Mapeamento para chamar my-dired-fzf com SPC f z
+(map! :map dired-mode-map
+      :localleader
+      :desc "fzf in dired"
+      "z" #'my-dired-fzf)
+
+;; Mapeamento personalizado com prefixo SPC m
+;; (map! :leader
+;;       :prefix "m"
+;;       :desc "fzf"
+;;       "z" #'fzf)
+(map! :n "C-c C-b" #'my-format-bold
+      :n "C-c C-i" #'my-format-italic
+      :n "C-c C-s" #'my-format-strikethrough)
+
+(defun my-format-bold ()
+  (interactive)
+  (insert "**")
+  (save-excursion
+    (insert "**")))
+
+(defun my-format-italic ()
+  (interactive)
+  (insert "*")
+  (save-excursion
+    (insert "*")))
+
+(defun my-format-strikethrough ()
+  (interactive)
+  (insert "~~")
+  (save-excursion
+    (insert "~~")))
+
+;; Funções para adicionar formatação a itens de lista em Markdown
+(defun my-format-markdown-bold ()
+  "Adiciona negrito ao item da lista atual em Markdown."
+  (interactive)
+  (save-excursion
+    (let ((item (thing-at-point 'line t)))
+      (beginning-of-line)
+      (delete-region (point) (line-end-position))
+      (insert (format "**%s**" item)))))
+
+(defun my-format-markdown-italic ()
+  "Adiciona itálico ao item da lista atual em Markdown."
+  (interactive)
+  (save-excursion
+    (let ((item (thing-at-point 'line t)))
+      (beginning-of-line)
+      (delete-region (point) (line-end-position))
+      (insert (format "*%s*" item)))))
+
+(defun my-format-markdown-strikethrough ()
+  "Adiciona tachado ao item da lista atual em Markdown."
+  (interactive)
+  (save-excursion
+    (let ((item (thing-at-point 'line t)))
+      (beginning-of-line)
+      (delete-region (point) (line-end-position))
+      (insert (format "~~%s~~" item)))))
+
+;; Mapeia os atalhos para os comandos de formatação em Markdown
+(map! :map markdown-mode-map
+      :leader
+      :desc "Italicize item in Markdown" "m i i" #'my-format-markdown-italic
+      :desc "Bold item in Markdown" "m i b" #'my-format-markdown-bold
+      :desc "Strikethrough item in Markdown" "m i s" #'my-format-markdown-strikethrough)
+
+;; Funções para adicionar formatação a itens de lista em Org Mode
+(defun my-format-org-bold ()
+  "Adiciona negrito ao item da lista atual em Org Mode."
+  (interactive)
+  (save-excursion
+    (let ((item (thing-at-point 'line t)))
+      (beginning-of-line)
+      (let ((line (thing-at-point 'line t)))
+        (when (string-match "^\\+ \\([0-9]+\\..*\\)" line)
+          (delete-region (point) (line-end-position))
+          (insert (format "+ %s+" (match-string 1 line))))))))
+
+(defun my-format-org-italic ()
+  "Adiciona itálico ao item da lista atual em Org Mode."
+  (interactive)
+  (save-excursion
+    (let ((item (thing-at-point 'line t)))
+      (beginning-of-line)
+      (let ((line (thing-at-point 'line t)))
+        (when (string-match "^\\+ \\([0-9]+\\..*\\)" line)
+          (delete-region (point) (line-end-position))
+          (insert (format "/%s/" (match-string 1 line))))))))
+
+(defun my-format-org-strikethrough ()
+  "Adiciona tachado ao item da lista atual em Org Mode."
+  (interactive)
+  (save-excursion
+    (let ((item (thing-at-point 'line t)))
+      (beginning-of-line)
+      (let ((line (thing-at-point 'line t)))
+        (when (string-match "^\\+ \\([0-9]+\\..*\\)" line)
+          (delete-region (point) (line-end-position))
+          (insert (format "+ +%s+" (match-string 1 line))))))))
+
+;; Função para remover qualquer formatação (negrito, itálico, tachado) do item da lista em Org Mode
+(defun my-remove-org-formatting ()
+  "Remove qualquer formatação (negrito, itálico, tachado) do item da lista atual em Org Mode."
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (let ((line (thing-at-point 'line t)))
+      ;; Remove formatação de negrito
+      (setq line (replace-regexp-in-string "\\*\\(.*?\\)\\*" "\\1" line))
+      ;; Remove formatação de itálico
+      (setq line (replace-regexp-in-string "/\\(.*?\\)/" "\\1" line))
+      ;; Remove formatação de tachado
+      (setq line (replace-regexp-in-string "\\+ \\(.*?\\)\\+" "\\1" line))
+      ;; Remove espaços em excesso
+      (setq line (replace-regexp-in-string "\\s-+$" "" line))
+      (delete-region (point) (line-end-position))
+      (insert line))))
+
+;; Mapeia os atalhos para os comandos de formatação em Org Mode
+(map! :map org-mode-map
+      :leader
+      :desc "Italicize item in Org" "m i i" #'my-format-org-italic
+      :desc "Bold item in Org" "m i b" #'my-format-org-bold
+      :desc "Strikethrough item in Org" "m i s" #'my-format-org-strikethrough
+      :desc "Remove any formatting from item in Org" "m i r" #'my-remove-org-formatting)
