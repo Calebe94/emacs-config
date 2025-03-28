@@ -13,9 +13,9 @@
 (custom-set-faces
  '(variable-pitch ((t (:family "JetBrains Mono")))))
 
-;(custom-set-faces!
-;  '(vertical-border :foreground "#666666")
-;  '(mode-line :box "1px solid #666666"))
+(custom-set-faces!
+  '(vertical-border :foreground "#81a2be")
+  '(mode-line :box (:line-width 1 :color "#81a2be")))
 
 (setq doom-theme 'doom-tomorrow-night)
 
@@ -396,7 +396,7 @@
   (org-ai-global-mode) ; installs global keybindings on C-c M-a
   :config
   (setq org-ai-default-chat-model "gpt-3.5-turbo") ; if you are on the gpt-4 beta:
-  (setq org-ai-openai-api-token "ORG_AI_TOKEN")
+  (setq org-ai-openai-api-token "<REDACTED>")
   (org-ai-install-yasnippets)) ; if you are using yasnippet and want `ai` snippets
 
 (setq warning-suppress-types '((org-element-cache)))
